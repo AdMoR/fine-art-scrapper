@@ -1,18 +1,42 @@
 import requests
+import json
 from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import re
-from typing import NamedTuple, List, Dict
+from typing import NamedTuple, List, Dict, Any
+
+
+class ResultItem(NamedTuple):
+    result_id: int
+    lot_id: int
+    price: float
+    currency: str
+
+    def to_json(self):
+        return {"result_id": self.result_id, "lot_id": self.lot_id, "price": self.price, "currency": self.currency}
+
+
+class CatalogItem(NamedTuple):
+    catalog_id: int
+    lot_id: int
+    presentation: str
+    result: str
+    estimation: str
+
+    def to_json(self):
+        return {"catalog_id": self.catalog_id, "lot_id": self.lot_id, "presentation": self.presentation,
+                "result": self.result, "estimation": self.estimation}
 
 
 class DroutSalesElement(NamedTuple):
-    sale_id: int
+    catalog_id: int
     title: str
     who: str
     where: str
-    catalog_elements: List[Dict]
-    result_elements: List[Dict]
+    catalog_elements: List[CatalogItem]
+    result_elements: List[ResultItem]
+    is_passed: bool = False
 
     @property
     def catalog_df(self):
@@ -22,6 +46,19 @@ class DroutSalesElement(NamedTuple):
     def result_df(self):
         return pd.DataFrame(self.result_elements)
 
+    def redis_serialize(self, redis_cli):
+        # Rule : do not serialize active sales, we assume all infos will remain after
+        if not self.is_passed:
+            return
+        if redis_cli.hget("sales", self.catalog_id) is None:
+            redis_cli.hset("sales", self.catalog_id,
+                           json.dumps({"id": self.catalog_id, "title": self.title, "who": self.who, "where": self.where})
+                           )
+            for cata in self.catalog_elements:
+                redis_cli.hset("catalog_item", cata.lot_id, cata.to_json())
+            for rez in self.result_elements:
+                redis_cli.hset("result_item", rez.result_id, rez.to_json())
+
 
 class GazetteDrouotScraper:
 
@@ -29,10 +66,13 @@ class GazetteDrouotScraper:
         self.token = token
         self.known = list()
         self.headers = {
-            "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:95.0) Gecko/20100101 Firefox/95.0",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:95.0) Gecko/20100101 Firefox/95.0",
             "Accept-Language": "fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3",
-            "Content-Type" : "application/x-www-form-urlencoded;charset=UTF-8"
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
         }
+
+    def run(self):
+        pass
 
     def parse_listing_page(self, offset=0):
         # url = "https://www.gazette-drouot.com/ventes-aux-encheres/resultats-ventes?offset=24850&max=50#modal-content2"
@@ -91,7 +131,7 @@ class GazetteDrouotScraper:
 
         return all_sale_elements
 
-    def parse_result_page(self, result_id):
+    def parse_result_page(self, result_id: int):
         other_url = f"https://www.gazette-drouot.com/catalogue/resultats/{result_id}"
         result_soup = self.url_to_soup(other_url)
 
@@ -100,9 +140,9 @@ class GazetteDrouotScraper:
         for l in listing:
             elements.append(self.parse_lot_result(l, result_id))
 
-        return pd.DataFrame(elements)
+        return elements
 
-    def parse_catalog_page(self, catalog_id, offset=0):
+    def parse_catalog_page(self, catalog_id: int, offset: int = 0) -> List[CatalogItem]:
         """
         ex : catalog_id = "119697-3-suisses"
         """
@@ -124,13 +164,14 @@ class GazetteDrouotScraper:
             resulat = description.find("div", class_="lotResulatListe")
             estimation = description.find("div", class_="lotEstimationListe")
 
-            all_elements.append({
-                "catalog_id": catalog_id,
-                "lot_id": lot_id,
-                "presentation": prez.text if prez else None,
-                "result": resulat.text if resulat else None,
-                "estimation": estimation.text if estimation else None,
-            })
+            all_elements.append(CatalogItem(
+                catalog_id=catalog_id,
+                lot_id=lot_id,
+                presentation=prez.text if prez else None,
+                result=resulat.text if resulat else None,
+                estimation=estimation.text if estimation else None
+            )
+            )
 
         if len(all_elements) >= 50:
             time.sleep(0.1)
@@ -140,7 +181,7 @@ class GazetteDrouotScraper:
 
         return all_elements
 
-    def parse_lot_result(self, lot_obj, result_id):
+    def parse_lot_result(self, lot_obj: Any, result_id: int) -> ResultItem:
         """
         listing = result_soup.find_all("div", class_="lots-item")
 
@@ -160,7 +201,7 @@ class GazetteDrouotScraper:
         if groups:
             price = groups[1]
 
-        return {"lot_id": lot_id, "price": price, "currency": "euro", "result_id": result_id}
+        return ResultItem(result_id=result_id, lot_id=lot_id, price=price, currency="euro")
 
     def url_to_soup(self, url):
         rez = requests.get(url, headers=self.headers,
