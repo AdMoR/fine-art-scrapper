@@ -67,7 +67,9 @@ class DroutSalesElement(NamedTuple):
                            json.dumps({"id": self.catalog_id, "title": self.title, "who": self.who,
                                        "where": self.where, "when": str(self.when)})
                            )
-            for cata in self.catalog_elements:
-                redis_cli.hset("catalog_item", cata.lot_id, cata.to_json())
-            for rez in self.result_elements:
-                redis_cli.hset("result_item", rez.result_id, rez.to_json())
+            if self.catalog_elements is not None:
+                for cata in self.catalog_elements:
+                    redis_cli.hset("catalog_item", cata.lot_id, cata.to_json())
+            if self.result_elements is not None:
+                for rez in self.result_elements:
+                    redis_cli.hset("result_item", rez.result_id, rez.to_json())

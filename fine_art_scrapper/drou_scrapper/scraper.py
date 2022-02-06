@@ -2,6 +2,7 @@ import requests
 import logging
 import dateparser
 import redis
+import datetime
 import os
 from bs4 import BeautifulSoup
 import pickle
@@ -70,6 +71,10 @@ class GazetteDrouotScraper:
             where = s.find("div", class_="lieuVente").text
             when = s.find("div", class_="dateVente").find("span", class_="capitalize").text.strip()
             when = dateparser.parse(when)
+
+            if when.date() > datetime.date.today() - datetime.timedelta(days=7):
+                self.logger.info("Sale is too young, skipping")
+                continue
 
             sale_url_link = s.find("div", "lienInfosVentes").find("a", class_="dsi-modal-link")["data-dsi-url"]
             sale_id_match = re.search("/recherche/venteInfoPageVente/([0-9]+)\?nomExpert=.*", sale_url_link)
