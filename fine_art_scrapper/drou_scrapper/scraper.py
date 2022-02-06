@@ -2,7 +2,9 @@ import requests
 import logging
 import dateparser
 import redis
+import os
 from bs4 import BeautifulSoup
+import pickle
 
 import time
 import re
@@ -25,7 +27,15 @@ class GazetteDrouotScraper:
         self.redis_cli = redis.StrictRedis()
 
     def run(self):
-        pass
+        for i in range(0, 2049):
+            print(f"Iteration {i}")
+            checkpoint_path = f"./checkpoint_{i}"
+            if os.path.exists(checkpoint_path):
+                continue
+            all_sale_elements = self.parse_listing_page(offset=50*i)
+            pickle.dump({"last_iteration": i, "elements": all_sale_elements}, open(checkpoint_path, "wb"))
+            for e in all_sale_elements:
+                e.redis_serialize(self.redis_cli)
 
     def parse_listing_page(self, offset=0):
         """
@@ -59,7 +69,7 @@ class GazetteDrouotScraper:
             who = s.find("h3", class_="etudeVente").text
             where = s.find("div", class_="lieuVente").text
             when = s.find("div", class_="dateVente").find("span", class_="capitalize").text.strip()
-            d = dateparser.parse(when)
+            when = dateparser.parse(when)
 
             sale_url_link = s.find("div", "lienInfosVentes").find("a", class_="dsi-modal-link")["data-dsi-url"]
             sale_id_match = re.search("/recherche/venteInfoPageVente/([0-9]+)\?nomExpert=.*", sale_url_link)
@@ -67,6 +77,10 @@ class GazetteDrouotScraper:
 
             if sale_id is None:
                 self.logger.warning(f"Nothing to parse for sale {s.title} given {sale_url_link}")
+                continue
+
+            if self.redis_cli.hget("sales", sale_id) is not None:
+                self.logger.warning(f"We already know sale {sale_id}")
                 continue
 
             # Opt 0.5 : get pubLink
@@ -119,7 +133,7 @@ class GazetteDrouotScraper:
         for it in items:
             imgLink = it.find("div", class_="imgLot")
             if imgLink is None:
-                print("No imgLink, this is not a lot")
+                self.logger.debug("No imgLink, this is not a lot")
                 continue
             lot_id = imgLink.find("a", href=True)["href"]
             description = it.find("div", class_="descriptionLot")
@@ -183,3 +197,8 @@ class GazetteDrouotScraper:
         if rez.status_code != 200:
             raise Exception(f"Query failed for url : {url}")
         return BeautifulSoup(rez.text, 'html.parser')
+
+
+if __name__ == "__main__":
+    scraper = GazetteDrouotScraper("6671eec9-2edd-48c1-89a0-6d31d7c20b91")
+    scraper.run()

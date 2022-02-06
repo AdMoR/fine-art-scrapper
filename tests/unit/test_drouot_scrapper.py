@@ -1,5 +1,6 @@
 import datetime
 
+import redis
 from unittest import TestCase, mock
 
 from fine_art_scrapper.drou_scrapper.scraper import GazetteDrouotScraper
@@ -29,8 +30,9 @@ class TestDroutScrapper(TestCase):
 
     def test_catalog_lisitng_parse(self):
         with mock.patch.object(self.scrapper, "url_to_soup", new=drouot_query_multiplexer):
-            rez = self.scrapper.parse_listing_page(0)
+            with mock.patch.object(self.scrapper, "redis_cli", new=mock.MagicMock(redis.StrictRedis)):
+                rez = self.scrapper.parse_listing_page(0)
 
-            self.assertGreater(len(rez), 0)
-            self.assertTrue(type(rez[0]), datetime.datetime)
-            self.assertGreater(len(rez[0].catalog_elements), 0)
+                self.assertGreater(len(rez), 0)
+                self.assertTrue(type(rez[0]), datetime.datetime)
+                self.assertGreater(len(rez[0].catalog_elements), 0)

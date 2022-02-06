@@ -12,7 +12,9 @@ class ResultItem(NamedTuple):
     currency: str
 
     def to_json(self):
-        return {"result_id": self.result_id, "lot_id": self.lot_id, "price": self.price, "currency": self.currency}
+        return json.dumps(
+            {"result_id": self.result_id, "lot_id": self.lot_id, "price": self.price, "currency": self.currency}
+        )
 
 
 class CatalogItem(NamedTuple):
@@ -23,8 +25,8 @@ class CatalogItem(NamedTuple):
     estimation: str
 
     def to_json(self):
-        return {"catalog_id": self.catalog_id, "lot_id": self.lot_id, "presentation": self.presentation,
-                "result": self.result, "estimation": self.estimation}
+        return json.dumps({"catalog_id": self.catalog_id, "lot_id": self.lot_id, "presentation": self.presentation,
+                           "result": self.result, "estimation": self.estimation})
 
 
 class DroutSalesElement(NamedTuple):
@@ -46,18 +48,19 @@ class DroutSalesElement(NamedTuple):
 
     @property
     def is_passed(self):
-        return datetime.date.today() - datetime.timedelta(days=7) < self.when
+        return self.when.date() < datetime.date.today() - datetime.timedelta(days=7)
 
     @property
     def sale_id(self):
         return hash("".join([self.title, self.who]))
 
     def already_parsed(self, redis_cli):
-        return redis_cli.hget("sales",self. catalog_id) is not None
+        return redis_cli.hget("sales", self.catalog_id) is not None
 
     def redis_serialize(self, redis_cli):
         # Rule : do not serialize active sales, we assume all infos will remain after
         if not self.is_passed:
+            print("Element is not old enough to be saved")
             return
         if not self.already_parsed(redis_cli):
             redis_cli.hset("sales", self.sale_id,
