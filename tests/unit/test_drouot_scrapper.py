@@ -29,8 +29,11 @@ class TestDroutScrapper(TestCase):
             self.assertTrue(any("Non Communiqué" not in e.estimation for e in rez))
 
     def test_catalog_lisitng_parse(self):
+        my_redis_mock = mock.MagicMock(redis.StrictRedis)
+        my_redis_mock.hget.return_value = None
         with mock.patch.object(self.scrapper, "url_to_soup", new=drouot_query_multiplexer):
-            with mock.patch.object(self.scrapper, "redis_cli", new=mock.MagicMock(redis.StrictRedis)):
+            with mock.patch.object(self.scrapper, "redis_cli", new=my_redis_mock):
+                print(self.scrapper.redis_cli.hget(1, 2))
                 rez = self.scrapper.parse_listing_page(0)
 
                 self.assertGreater(len(rez), 0)
