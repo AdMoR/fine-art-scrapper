@@ -9,9 +9,9 @@ import pickle
 
 import time
 import re
-from typing import List, Dict, Any
+from typing import List, Any
 
-from fine_art_scrapper.drou_scrapper.scraped_objects import DroutSalesElement, ResultItem, CatalogItem
+from fine_art_scrapper.utils.scraped_objects import DroutSalesElement, ResultItem, CatalogItem
 
 
 class GazetteDrouotScraper:
@@ -148,6 +148,9 @@ class GazetteDrouotScraper:
             resulat = description.find("div", class_="lotResulatListe")
             estimation = description.find("div", class_="lotEstimationListe")
 
+            artiste = description.find("div", class_="lotArtisteListe")
+            description_part = description.find("div", class_="lotDescriptionListe")
+
             all_elements.append(CatalogItem(
                 catalog_id=catalog_id,
                 lot_id=lot_id,
@@ -197,6 +200,14 @@ class GazetteDrouotScraper:
             price = groups[1]
 
         return ResultItem(result_id=result_id, lot_id=lot_id, price=price, currency="euro")
+
+    def parse_lot_detail_page(self, url):
+        soup = self.url_to_soup(url)
+
+        time.sleep(0.05)
+        page_description = soup.find("div", class_="lotDescriptionFiche").find("h2").text
+
+        return page_description
 
     def url_to_soup(self, url):
         rez = requests.get(url, headers=self.headers,
