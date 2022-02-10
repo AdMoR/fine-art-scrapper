@@ -25,20 +25,20 @@ def drouot_query_multiplexer(url):
     """
     if "passees" in url:
         if "offset=0" in url:
-            path = os.path.join(TEST_DIR, "mock_data", "sale_listing.html")
+            path = os.path.join(TEST_DIR, "mock_data", "drouot", "sale_listing.html")
             with open(path, "r") as f:
                 html_doc = "\n".join(f.readlines())
         else:
             html_doc = default_html
     elif "controller=lot" in url:
         if "offset=0" in url:
-            path = os.path.join(TEST_DIR, "mock_data", "sale_page_lot_listing.html")
+            path = os.path.join(TEST_DIR, "mock_data", "drouot", "sale_page_lot_listing.html")
             with open(path, "r") as f:
                 html_doc = "\n".join(f.readlines())
         else:
             html_doc = default_html
     elif "resultats" in url:
-        path = os.path.join(TEST_DIR, "mock_data", "results_page.html")
+        path = os.path.join(TEST_DIR, "mock_data", "drouot", "results_page.html")
         with open(path, "r") as f:
             html_doc = "\n".join(f.readlines())
     else:
