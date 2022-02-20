@@ -140,13 +140,16 @@ class GazetteDrouotScraper:
             if imgLink is None:
                 self.logger.debug("No imgLink, this is not a lot")
                 continue
-            if "Réservé aux abonnés" in it.text:
-                raise Exception("Token has expired")
             lot_id = imgLink.find("a", href=True)["href"]
             description = it.find("div", class_="descriptionLot")
             prez = description.find("div", class_="lotPresentation")
             resulat = description.find("div", class_="lotResulatListe")
             estimation = description.find("div", class_="lotEstimationListe")
+
+            if resulat and "Réservé aux abonnés" in resulat.text:
+                raise Exception(f"Token has expired : {resulat}")
+            if estimation and "Réservé aux abonnés" in estimation.text:
+                raise Exception(f"Token has expired : {estimation}")
 
             artiste = description.find("div", class_="lotArtisteListe")
             description_part = description.find("div", class_="lotDescriptionListe")
@@ -218,5 +221,5 @@ class GazetteDrouotScraper:
 
 
 if __name__ == "__main__":
-    scraper = GazetteDrouotScraper("8c63cd61-7930-49ce-96ec-412d0a426cb3")
+    scraper = GazetteDrouotScraper("7d3aa89a-64b1-43d0-a7f5-00c8421c9dfc")
     scraper.run()
