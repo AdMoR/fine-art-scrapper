@@ -29,8 +29,9 @@ def identify_lot_infos(lot_tokens):
 
 
 def identify_estimation_and_price(filtered_str):
+    filtered_str = filtered_str.replace("\xa0", "")
     match = re.search(
-        "\s+Résultat\s:\s+(?P<result>[\w]*)\s(?P<currency_opt>[\w]*).*Estimation :\s+(?P<estimation_low>[0-9]+)\s- (?P<estimation_high>[0-9]+) (?P<currency>[A-Z]*)\s+.",
+        "Résultat\s+:\s+(?P<result>\w+)\s+(?P<currency_opt>\w*)\s+/\s+Estimation\s+:\s+(?P<estimation_low>[0-9]+)\s+-\s+(?P<estimation_high>[0-9]+)\s+(?P<currency>[A-Z]*)",
         filtered_str)
     if match:
         return match.groupdict()
@@ -83,13 +84,9 @@ def identify_author(filtered_str):
 
 
 def identify_size(filtered_str):
-    """
-    TODO: 17.5 x 11.5 cm
-    18 x 25, 5 cm
-    """
-    found = re.search("([0-9]+)\s?x\s?([0-9]+)\s?([a-z]{0,3})", filtered_str)
+    found = re.search("(?P<width>[0-9]+[,. ]*[0-9]+)\s*\s*(?P<unit_width>[a-z]{0,3})\sx\s*(?P<height>[0-9]+[,. ]*[0-9]*)\s*(?P<unit_height>[a-z]{0,3})", filtered_str)
     if found:
-        return {"height": found[1], "width": found[2], "unit": found[3]}
+        return {k: v.strip(" ") for k, v in found.groupdict().items()}
 
 
 def identify_volume(filtered_str):
@@ -120,7 +117,7 @@ def identify_date(filtered_str):
 
 
 def identify_lot_id(filtered_str):
-    match = re.match("Lot n°\s*(?P<lot_id>[0-9]+)\s*(?P<bis>b?i?s?t?e?r?)", filtered_str)
+    match = re.search("Lot\s+n°\s*(?P<lot_id>[0-9]+)\s*(?P<bis>b?i?s?t?e?r?)", filtered_str)
     if match:
         return match.groupdict()
 
