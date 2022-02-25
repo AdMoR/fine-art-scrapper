@@ -65,6 +65,7 @@ class DroutParser:
                 )
         )
 
+
 if __name__ == "__main__.py":
-    df = DroutParser().parse_checkpoint()
-    df
+    df = DroutParser().parse_checkpoint("./my_checkpoints/checkpoint_33")
+    df.to_csv("test.csv")

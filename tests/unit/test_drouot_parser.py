@@ -10,7 +10,7 @@ class TestParser(TestCase):
         tests = [
             "Jean-Sébastien D'ASNIERE POUET (1901-1965)",
             "Irène PAGES (1934)",
-            "EUGÈNE LÉON LABITTE (1858 - 1937)"
+            "Eugène Léon LABITTE (1858 - 1937)",
             "Ecole truc du 18ème",
             "Ecole truc vers 1890",
             "Dans le gout de Jean PIAIRRE",
@@ -18,8 +18,9 @@ class TestParser(TestCase):
             "D'après RIBERA",
             "Dans le gout de BILLY"
         ]
-        results = ["D'ASNIERE POUET", "PAGES", "truc", "truc", "PIAIRRE", "RIBERA", "RIBERA", "BILLY"]
+        results = ["D'ASNIERE POUET", "PAGES", "LABITTE", "truc", "truc", "PIAIRRE", "RIBERA", "RIBERA", "BILLY"]
         for t, r in zip(tests, results):
+            print(t, r, "\n")
             rez = identify_author(t)
             self.assertNotEqual(rez, None, f"'{t}' failed the parsing")
             self.assertEqual(rez["surname"], r, f"No match {rez['surname']}!={r}")
@@ -85,7 +86,7 @@ class TestParser(TestCase):
             "18 x 25, 5 cm",
             "18 mm x 34 cm"
         ]
-        results = [("12", "35"), ("17.5", "11.5"), ("18", "25, 5"), ("18", "34")]
+        results = [(12, 35), (17.5, 11.5), (18, 25.5), (18, 34)]
         for t, r in zip(tests, results):
             rez = identify_size(t)
             self.assertNotEqual(rez, None, f"'{t}' failed the parsing")

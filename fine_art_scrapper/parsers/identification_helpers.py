@@ -34,8 +34,18 @@ def identify_estimation_and_price(filtered_str):
         "Résultat\s+:\s+(?P<result>\w+)\s+(?P<currency_opt>\w*)\s+/\s+Estimation\s+:\s+(?P<estimation_low>[0-9]+)\s+-\s+(?P<estimation_high>[0-9]+)\s+(?P<currency>[A-Z]*)",
         filtered_str)
     if match:
-        return match.groupdict()
-
+        result = match.groupdict()
+        for c in ["result", "estimation_low", "estimation_high"]:
+            result[c] = to_float(result[c])
+        return result
+    match = re.search(
+        "Résultat\s+:\s+(?P<result>\w+)\s+(?P<currency_opt>\w*)",
+        filtered_str)
+    if match:
+        result = match.groupdict()
+        for c in ["result"]:
+            result[c] = to_float(result[c])
+        return result
 
 def str_reverse(str_):
     return "".join(reversed(str_))
@@ -71,7 +81,8 @@ def identify_author(filtered_str):
     match = re.search("(?P<name>Ecole)\s+(?P<surname>\w+)\s+vers\s+(?P<birth>1[0-9]{3})", filtered_str)
     if match:
         return match.groupdict()
-    match = re.search(r"(d?D?'après|D?d?ans le goû?u?t de)\s(?P<name>[A-Za-z -'éèê]+)\s(?P<surname>[A-Z \-']+)", filtered_str)
+    match = re.search(r"(d?D?'après|D?d?ans le goû?u?t de)\s(?P<name>[A-Za-z -'éèê]+)\s(?P<surname>[A-Z \-']+)",
+                      filtered_str)
     if match:
         rez = match.groupdict()
         rez.update({"author": False})
@@ -86,7 +97,10 @@ def identify_author(filtered_str):
 def identify_size(filtered_str):
     found = re.search("(?P<width>[0-9]+[,. ]*[0-9]+)\s*\s*(?P<unit_width>[a-z]{0,3})\sx\s*(?P<height>[0-9]+[,. ]*[0-9]*)\s*(?P<unit_height>[a-z]{0,3})", filtered_str)
     if found:
-        return {k: v.strip(" ") for k, v in found.groupdict().items()}
+        result = found.groupdict()
+        for c in ["height", "width"]:
+            result[c] = to_float(result[c])
+        return result
 
 
 def identify_volume(filtered_str):
@@ -99,7 +113,13 @@ def identify_volume(filtered_str):
         "H\s?:\s?(?P<height>[0-9]+)\W*L\s?:\s?(?P<width>[0-9]+)\W*P\s?:\s?(?P<depth>[0-9]+)\s?(?P<unit>[a-z]{0,3})",
         filtered_str)
     if match:
-        return match.groupdict()
+        result = match.groupdict()
+
+        for c in ["height", "width", "depth"]:
+            result[c] = to_float(result[c])
+
+        return result
+
 
 
 def identify_date(filtered_str):
@@ -203,3 +223,10 @@ def identify_defect(str_):
     match = p.search(str_.lower())
     if match:
         return match.groupdict()
+
+
+def to_float(str_):
+    try:
+        return float(str_.replace(" ", "").replace(",", "."))
+    except ValueError:
+        return str_
