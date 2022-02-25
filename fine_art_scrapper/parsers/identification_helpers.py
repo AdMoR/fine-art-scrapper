@@ -106,14 +106,14 @@ def identify_date(filtered_str):
     """
     Todo : Daté 83, Daté en 1634
     """
-    for match_format in ["(1[0-9]{3})", "(20[0-2]{1}[0-9]{1})"]:
+    for match_format in ["D?d?até\s+de\s+(1[0-9]{3})", "D?d?até\s+de\s+(20[0-2]{1}[0-9]{1})"]:
         date_format_one = re.search(match_format, filtered_str)
         if date_format_one is not None:
-            return int(date_format_one[1])
-    for match_format in ["(1[0-9]{1})\s?ème", "(2[0-1]{1})\s?ème"]:
+            return {"object_date": int(date_format_one[1])}
+    for match_format in ["D?d?até\s+du\s+(1[0-9]{1})\s?ème", "D?d?até\s+du\s+(2[0-1]{1})\s?ème"]:
         date_format_one = re.search(match_format, filtered_str)
         if date_format_one is not None:
-            return (int(date_format_one[1]) - 1) * 100 + 50
+            return {"object_date": (int(date_format_one[1]) - 1) * 100 + 50}
 
 
 def identify_lot_id(filtered_str):
@@ -133,7 +133,7 @@ def identify_authenticity(filtered_str):
     TODO: Nous remercions le comité Utrillo pour avoir confirmé l'authenticité de cette toile.
     Nous remercions le comité Utrillo pour avoir confirmé l'authenticité de cette toile.
     """
-    keyword_list = ["signé", "signature", "initiales"]
+    keyword_list = ["signé", "signature", "initiales", "monogrammé", "monogrammée", "signée"]
     if any(k.lower() in filtered_str.lower() for k in keyword_list):
         return {"authentic": True}
 
@@ -154,13 +154,36 @@ def identify_materials(str_):
     Gouache sur papier
     dessin et craie sur papier
     Gouache sur carton
+    Encre de Chine sur papier beige
     Importante Huile sur panneau, Cadre en bois sculpté et doré
     """
+    all_kinds = \
+        ['gouache', 'huile', 'huiles', 'aquarelle',
+         'aquarelle et gouache', 'pastel', 'crayons',
+         'dessin', 'pastel et huile', 'épreuve', 'forte',
+         'forte et aquatinte', 'épreuves', 'chine et lavis', 'gravures', 'gravure', 'essai',
+         'contrecoller', 'polychromes', 'intégrale', 'epreuve',
+         'aquarelles', 'puits', 'padmasana', 'deboujt',
+         'rinceaux', 'acrylique', 'chine', 'couleur', 'fusain et collage',
+         'fusains et collages', 'huile et gouache', 'gouache et fusain',
+         'caïque', 'crayon et fusain', 'mixte et assemblages', 'huile et collage',
+         'mixte et collage', 'peinture', 'flocage', 'lithographie', 'plomb', 'encre et gouache',
+         'crayon et gouache', 'stylo', 'encre', 'crayon et encre',
+         'odalisques', 'pastel et gouache', 'gravé', 'gouaches']
+    all_materials = ['papier', 'toile', 'paneau', 'panneau', 'fond', 'isorel', 'carton', 'cuivre', 'ivoire',
+       'bulle', 'vélin', 'zinc', 'simili', 'chine',  'bois', 'linoléum',  'soie', 'loing', 'aggloméré', 'parchemin',
+       'contreplaqué', 'arches', 'lino', 'piedouche']
+
+    any_kind = "|".join(sorted(all_kinds, key=lambda x: len(x), reverse=True))
+
     p = re.compile("(?P<kind>(\w+(\set\s)?)+)\s+sur\s+(?P<material>\w+)")
     match = p.search(str_.lower())
     if match:
-        return match.groupdict()
-    p = re.compile("(?P<kind>aquarelle|pastel|huile|dessin|craie|gouache)")
+        result = match.groupdict()
+        if result["kind"] not in all_kinds and result["material"] not in all_materials:
+            result["unknown_medium"] = True
+        return result
+    p = re.compile(f"(?P<kind>{any_kind})")
     match = p.search(str_.lower())
     if match:
         return match.groupdict()

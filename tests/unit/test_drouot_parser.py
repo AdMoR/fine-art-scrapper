@@ -10,6 +10,7 @@ class TestParser(TestCase):
         tests = [
             "Jean-Sébastien D'ASNIERE POUET (1901-1965)",
             "Irène PAGES (1934)",
+            "EUGÈNE LÉON LABITTE (1858 - 1937)"
             "Ecole truc du 18ème",
             "Ecole truc vers 1890",
             "Dans le gout de Jean PIAIRRE",
@@ -39,6 +40,9 @@ class TestParser(TestCase):
             dessin et craie sur papier
             Gouache sur carton
             Importante Huile sur panneau, Cadre en bois sculpté et doré
+            Huile double face sur panneau de carton renforcé
+            Crayon noir et rehaut de craie blanche sur papier bleu
+            Femme assise les mains croisées sur les genoux Aquarelle sur papier (acc.) ANTIMATCH !!!!!!!!!
         """
         tests = filter(lambda x: len(x) > 0, strs.strip(" ").split("\n"))
 

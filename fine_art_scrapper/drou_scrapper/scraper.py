@@ -30,7 +30,7 @@ class GazetteDrouotScraper:
     def run(self):
         for i in range(0, 2049):
             print(f"Iteration {i}")
-            checkpoint_path = f"./checkpoint_{i}"
+            checkpoint_path = f"./my_checkpoints/checkpoint_{i}"
             if os.path.exists(checkpoint_path):
                 continue
             all_sale_elements = self.parse_listing_page(offset=50*i)
@@ -221,5 +221,5 @@ class GazetteDrouotScraper:
 
 
 if __name__ == "__main__":
-    scraper = GazetteDrouotScraper("7d3aa89a-64b1-43d0-a7f5-00c8421c9dfc")
+    scraper = GazetteDrouotScraper("47beea7c-5965-4231-95a1-7ddae6a58a97")
     scraper.run()
