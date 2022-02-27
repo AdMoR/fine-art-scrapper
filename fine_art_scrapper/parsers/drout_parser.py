@@ -1,5 +1,6 @@
 import itertools
 import pickle
+import os
 
 import pandas as pd
 
@@ -66,6 +67,16 @@ class DroutParser:
         )
 
 
-if __name__ == "__main__.py":
-    df = DroutParser().parse_checkpoint("./my_checkpoints/checkpoint_33")
-    df.to_csv("test.csv")
+if __name__ == "__main__":
+    all_dfs = list()
+    save_dir = "./results"
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
+    parser = DroutParser()
+    for path in os.listdir("./my_checkpoints"):
+        save_path = os.path.join(save_dir, path + ".csv")
+        if not os.path.exists(save_path):
+            all_dfs.append(parser.parse_checkpoint(f"./my_checkpoints/{path}"))
+            all_dfs[-1].to_csv(save_path)
+    final_df = pd.concat(all_dfs)
+    final_df.to_csv("final.csv")

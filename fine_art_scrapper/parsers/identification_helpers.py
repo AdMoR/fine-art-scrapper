@@ -178,12 +178,12 @@ def identify_materials(str_):
     Importante Huile sur panneau, Cadre en bois sculpté et doré
     """
     all_kinds = \
-        ['gouache', 'huile', 'huiles', 'aquarelle',
-         'aquarelle et gouache', 'pastel', 'crayons',
-         'dessin', 'pastel et huile', 'épreuve', 'forte',
+        ['gouache', 'huile', 'huiles', 'aquarelle', "rotoflexographie",
+         'aquarelle et gouache', 'pastel', 'crayons', "impression", "huile",
+         'dessin', 'pastel et huile', 'épreuve', 'forte', "dessins",
          'forte et aquatinte', 'épreuves', 'chine et lavis', 'gravures', 'gravure', 'essai',
          'contrecoller', 'polychromes', 'intégrale', 'epreuve',
-         'aquarelles', 'puits', 'padmasana', 'deboujt',
+         'aquarelles', 'puits', 'padmasana', "estompe"
          'rinceaux', 'acrylique', 'chine', 'couleur', 'fusain et collage',
          'fusains et collages', 'huile et gouache', 'gouache et fusain',
          'caïque', 'crayon et fusain', 'mixte et assemblages', 'huile et collage',

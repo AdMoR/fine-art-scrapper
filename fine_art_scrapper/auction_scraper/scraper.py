@@ -4,6 +4,7 @@ import redis
 import os
 from bs4 import BeautifulSoup
 import pickle
+from urllib.parse import urlencode, quote_plus
 
 import time
 from typing import List, Any
@@ -23,69 +24,99 @@ class GazetteDrouotScraper:
             "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
         }
         self.redis_cli = redis.StrictRedis()
+        self.cookies = self.acquire_auth()
+
+    def acquire_auth(self):
+        data = {
+            "email": "adrien_morvan@hotmail.fr",
+            "password": os.environ["password"]
+        }
+        encoded_data = urlencode(data)
+        url = "https://www.auction.fr/_fr/collectionneur/authenticate/"
+        req = requests.post(url, data=encoded_data, headers=self.headers)
+        return req.cookies
 
     def run(self):
-        for i in range(0, 2049):
+        for i in range(1, 626):
             print(f"Iteration {i}")
             checkpoint_path = f"./checkpoint_{i}"
             if os.path.exists(checkpoint_path):
                 continue
-            all_sale_elements = self.parse_listing_page(offset=50*i)
+            all_sale_elements = self.parse_listing_page(offset=i)
             pickle.dump({"last_iteration": i, "elements": all_sale_elements}, open(checkpoint_path, "wb"))
             for e in all_sale_elements:
                 e.redis_serialize(self.redis_cli)
 
     def parse_listing_page(self, offset=0):
         """
-        Example of url parsed : url =
-        https://www.gazette-drouot.com/ventes-aux-encheres/resultats-ventes?offset=24850&max=50#modal-content2
 
-        In hierarchy :
-
-        parse_listing_page(offset=0)
-         - parse_catalog_page(sale_a), parse_result_page(sale_a)
-         - parse_catalog_page(sale_b), parse_result_page(sale_b)
-         - ...
-
-        parse_listing_page(offset=50)
-         - parse_catalog_page(sale_u), parse_result_page(sale_u)
-         - parse_catalog_page(sale_v), parse_result_page(sale_v)
         """
-        new_url = f"https://www.gazette-drouot.com/ventes-aux-encheres/passees?offset={offset}&max=50"
-        soup = self.url_to_soup(new_url)
-        sales = soup.find_all("div", class_="infosVente")
+        time.sleep(0.1)
+        listing_url = f"https://www.auction.fr/_fr/vente/passees/?search-filter=&search-filter=&search-filter=&from-date=&to-date=&affichage=&page={offset}"
+        soup = self.url_to_soup(listing_url)
+        sales = soup.find_all("div", class_="vente-passee")
 
         all_sale_elements = list()
 
         for i, s in enumerate(sales):
-            time.sleep(0.1)
-            catalog = s.find("div", class_="catalogueLink")
-            pass
+            sale_link = s.find("a", href=True)["href"]
+            sale = self.parse_catalog_page(sale_link)
+            all_sale_elements.append(sale)
 
-    def parse_catalog_page(self, catalog_id: int, offset: int = 0) -> List[CatalogItem]:
+        return all_sale_elements
+
+    def parse_catalog_page(self, catalog_id: str, offset: int = 0) -> List[CatalogItem]:
         """
         ex : catalog_id = "119697-3-suisses"
         """
-        pass
+        time.sleep(0.1)
+        catalog_items = list()
+        sale_url = "https://www.auction.fr" + catalog_id
+        sale_soup = self.url_to_soup(sale_url)
+        all_items = sale_soup.find_all("div", class_="card")
 
-    def parse_result_page(self, result_id: int):
-        pass
+        for it in all_items:
+            print(it)
+            print("\n\n")
+            lot_block = it.find("h5", class_="card-lot")
+            if lot_block is None:
+                continue
+            lot_id = lot_block.text
+            detail_link = it.find("a", href=True)["href"]
+            title = it.find("h4", class_="card-title").text
+            estimation_price = it.find("span", class_="card-price").text
+            if it.find("span", class_="card-no-result") is not None:
+                result_price = None
+            else:
+                result_price = it.find("span", class_="card-result").text
 
-    def parse_lot_result(self, lot_obj: Any, result_id: int) -> ResultItem:
-        """
-        listing = result_soup.find_all("div", class_="lots-item")
+            detail = self.parse_lot_detail_page(detail_link)
 
-        for l in listing:
-            this_code
-        """
-        pass
+            lot = {"id": lot_id, "link": detail_link, "title": title, "estimation": estimation_price,
+                   "result": result_price, "detail": detail}
+
+            catalog_items.append(lot)
+
+        # TODO : parse next page !!!!!
+        # page-item to find the next link
+
+        return catalog_items
 
     def parse_lot_detail_page(self, url):
-        pass
+        time.sleep(0.05)
+        lot_url = "https://www.auction.fr" + url
+        lot_soup = self.url_to_soup(lot_url)
+
+        infos = lot_soup.find("div", class_="content-block")
+
+        cblocks = lot_soup.find_all("div", class_="content-block")
+        cat = list(filter(lambda x: "Catégories" in x.text, cblocks))[0].find("a", class_="btn").text
+
+        return {"category": cat, "description": infos.text}
 
     def url_to_soup(self, url):
         rez = requests.get(url, headers=self.headers,
-                           cookies={"SESSION": self.token})
+                           cookies=self.cookies)
         if rez.status_code != 200:
             raise Exception(f"Query failed for url : {url}")
         return BeautifulSoup(rez.text, 'html.parser')
