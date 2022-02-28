@@ -24,16 +24,19 @@ def auction_query_multiplexer(url):
     """
     """
     if "passees" in url:
-        if "offset=0" in url:
+        if "page=0" in url:
             path = os.path.join(TEST_DIR, "mock_data", "auction", "sale_listing.html")
             with open(path, "r") as f:
                 html_doc = "\n".join(f.readlines())
         else:
             html_doc = default_html
     elif "vente" in url:
-        path = os.path.join(TEST_DIR, "mock_data", "auction", "sale_page_lot_listing.html")
-        with open(path, "r") as f:
-            html_doc = "\n".join(f.readlines())
+        if "/_fr/vente/vente-classique-a-10h-et-14h-70883" in url:
+            path = os.path.join(TEST_DIR, "mock_data", "auction", "sale_page_lot_listing.html")
+            with open(path, "r") as f:
+                html_doc = "\n".join(f.readlines())
+        else:
+            html_doc = default_html
     elif "lot" in url:
         path = os.path.join(TEST_DIR, "mock_data", "auction", "lot_page.html")
         with open(path, "r") as f:

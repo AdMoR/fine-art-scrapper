@@ -24,12 +24,12 @@ class TestAuctionScrapper(TestCase):
     def test_catalog_parse(self):
         with mock.patch.object(self.scrapper, "url_to_soup", new=auction_query_multiplexer):
             rez = self.scrapper.parse_catalog_page(
-                "/_fr/vente/collection-ulmann-mille-dessins-de-giulio-romano-a-maurice-denis-deuxieme-jour-de-vente-70418?query=&numero=&affichage=", list())
+                "/_fr/vente/vente-classique-a-10h-et-14h-70883", list())
             self.assertGreater(len(rez), 0)
 
             self.assertTrue(any("Non Communiqué" not in e["estimation"] for e in rez))
 
-    def test_catalog_lisitng_parse(self):
+    def test_catalog_listing_parse(self):
         my_redis_mock = mock.MagicMock(redis.StrictRedis)
         my_redis_mock.hget.return_value = None
         with mock.patch.object(self.scrapper, "url_to_soup", new=auction_query_multiplexer):
@@ -37,5 +37,3 @@ class TestAuctionScrapper(TestCase):
                 rez = self.scrapper.parse_listing_page(0)
 
                 self.assertGreater(len(rez), 0)
-                self.assertTrue(type(rez[0]), datetime.datetime)
-                self.assertGreater(len(rez[0].catalog_elements), 0)

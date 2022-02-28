@@ -39,13 +39,11 @@ class AuctionFRScraper:
     def run(self):
         for i in range(1, 626):
             print(f"Iteration {i}")
-            checkpoint_path = f"./checkpoint_{i}"
+            checkpoint_path = f"./auction_checkpoint_{i}"
             if os.path.exists(checkpoint_path):
                 continue
             all_sale_elements = self.parse_listing_page(offset=i)
             pickle.dump({"last_iteration": i, "elements": all_sale_elements}, open(checkpoint_path, "wb"))
-            for e in all_sale_elements:
-                e.redis_serialize(self.redis_cli)
 
     def parse_listing_page(self, offset=0):
         """
@@ -79,12 +77,12 @@ class AuctionFRScraper:
         all_items = sale_soup.find_all("div", class_="card")
 
         for it in all_items:
-            print(it)
-            print("\n\n")
             lot_block = it.find("h5", class_="card-lot")
             if lot_block is None:
                 continue
             lot_id = lot_block.text
+            when = it.find("span", class_="timezoned-date").text
+            who = it.find("span", class_="card-nom-vendeur")
             detail_link = it.find("a", href=True)["href"]
             title = it.find("h4", class_="card-title").text
             estimation_price = it.find("span", class_="card-price").text
@@ -96,7 +94,7 @@ class AuctionFRScraper:
             detail = self.parse_lot_detail_page(detail_link)
 
             lot = {"id": lot_id, "link": detail_link, "title": title, "estimation": estimation_price,
-                   "result": result_price, "detail": detail}
+                   "result": result_price, "detail": detail, "when": when, "who": who}
 
             catalog_items.append(lot)
 
