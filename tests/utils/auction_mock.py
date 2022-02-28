@@ -7,38 +7,35 @@ default_html = """
                 <html><head><title>The Dormouse's story</title></head>
                 <body>
                 <p class="title"><b>The Dormouse's story</b></p>
-                
+
                 <p class="story">Once upon a time there were three little sisters; and their names were
                 <a href="http://example.com/elsie" class="sister" id="link1">Elsie</a>,
                 <a href="http://example.com/lacie" class="sister" id="link2">Lacie</a> and
                 <a href="http://example.com/tillie" class="sister" id="link3">Tillie</a>;
                 and they lived at the bottom of a well.</p>
-                
+
                 <p class="story">...</p>
                 </body>
                 </html>
             """
 
 
-def drouot_query_multiplexer(url):
+def auction_query_multiplexer(url):
     """
     """
     if "passees" in url:
         if "offset=0" in url:
-            path = os.path.join(TEST_DIR, "mock_data", "drouot", "sale_listing.html")
+            path = os.path.join(TEST_DIR, "mock_data", "auction", "sale_listing.html")
             with open(path, "r") as f:
                 html_doc = "\n".join(f.readlines())
         else:
             html_doc = default_html
-    elif "controller=lot" in url:
-        if "offset=0" in url:
-            path = os.path.join(TEST_DIR, "mock_data", "drouot", "sale_page_lot_listing.html")
-            with open(path, "r") as f:
-                html_doc = "\n".join(f.readlines())
-        else:
-            html_doc = default_html
-    elif "resultats" in url:
-        path = os.path.join(TEST_DIR, "mock_data", "drouot", "lot_page.html")
+    elif "vente" in url:
+        path = os.path.join(TEST_DIR, "mock_data", "auction", "sale_page_lot_listing.html")
+        with open(path, "r") as f:
+            html_doc = "\n".join(f.readlines())
+    elif "lot" in url:
+        path = os.path.join(TEST_DIR, "mock_data", "auction", "lot_page.html")
         with open(path, "r") as f:
             html_doc = "\n".join(f.readlines())
     else:

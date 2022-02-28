@@ -27,9 +27,10 @@ class DroutParser:
                 lot_profile = self.identify_lot_infos(filtered_pres)
                 if lot_profile is None:
                     continue
-                price_estim = identify_estimation_and_price(element.estimation.replace("\n", " ").replace("\xa0", ""))
-                if price_estim:
-                    lot_profile.update(price_estim)
+                if element.estimation is not None:
+                    price_estim = identify_estimation_and_price(element.estimation.replace("\n", " ").replace("\xa0", ""))
+                    if price_estim:
+                        lot_profile.update(price_estim)
                 lot_profile["presentation"] = ".".join(filtered_pres)
                 all_items.append(lot_profile)
 

@@ -1,3 +1,4 @@
+from typing import List
 import requests
 import logging
 import redis
@@ -12,10 +13,9 @@ from typing import List, Any
 from fine_art_scrapper.utils.scraped_objects import ResultItem, CatalogItem
 
 
-class GazetteDrouotScraper:
+class AuctionFRScraper:
 
-    def __init__(self, token="75107dc6-4d0e-4da3-8927-18946bebfea9"):
-        self.token = token
+    def __init__(self):
         self.known = list()
         self.logger = logging.getLogger("AuctionScraper")
         self.headers = {
@@ -60,18 +60,21 @@ class GazetteDrouotScraper:
 
         for i, s in enumerate(sales):
             sale_link = s.find("a", href=True)["href"]
-            sale = self.parse_catalog_page(sale_link)
+            sale = self.parse_catalog_page(sale_link, list())
             all_sale_elements.append(sale)
 
         return all_sale_elements
 
-    def parse_catalog_page(self, catalog_id: str, offset: int = 0) -> List[CatalogItem]:
+    def parse_catalog_page(self, catalog_id: str, already_parsed: List[str]) -> List[CatalogItem]:
         """
         ex : catalog_id = "119697-3-suisses"
         """
         time.sleep(0.1)
         catalog_items = list()
         sale_url = "https://www.auction.fr" + catalog_id
+        if sale_url in already_parsed:
+            return list()
+        already_parsed.append(sale_url)
         sale_soup = self.url_to_soup(sale_url)
         all_items = sale_soup.find_all("div", class_="card")
 
@@ -97,8 +100,11 @@ class GazetteDrouotScraper:
 
             catalog_items.append(lot)
 
-        # TODO : parse next page !!!!!
-        # page-item to find the next link
+        # Next page
+        link = sale_soup.find("a", {"aria-label": "Next"}, href=True)
+        if link is not None:
+            new_link = link["href"]
+            catalog_items.extend(self.parse_catalog_page(new_link, already_parsed))
 
         return catalog_items
 
@@ -123,5 +129,5 @@ class GazetteDrouotScraper:
 
 
 if __name__ == "__main__":
-    scraper = GazetteDrouotScraper("8c63cd61-7930-49ce-96ec-412d0a426cb3")
+    scraper = AuctionFRScraper()
     scraper.run()
